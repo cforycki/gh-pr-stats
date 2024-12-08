@@ -1,0 +1,33 @@
+{
+  "name": "gh-pr-stats",
+  "version": "1.0.0",
+  "description": "Visualize pull requests stats for a given period of time",
+  "main": "src/index.jsx",
+  "type": "module",
+  "scripts": {
+    "start": "vite --config vite.config.js",
+    "lint": "biome check --fix --unsafe src"
+  },
+  "dependencies": {
+    "@chakra-ui/react": "^3.2.3",
+    "@emotion/react": "^11.13.5",
+    "graphql": "^16.3.0",
+    "graphql-request": "^4.2.0",
+    "jotai": "^2.10.3",
+    "next-themes": "^0.4.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-icons": "^5.4.0",
+    "recharts": "^2.14.1"
+  },
+  "author": "Christophe Forycki",
+  "license": "ISC",
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.3"
+  },
+  "overrides": {
+    "react-is": "^19.0.0-beta-26f2496093-20240514"
+  }
+}
