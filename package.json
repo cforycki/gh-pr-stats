@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "vite --config vite.config.js",
+    "build": "vite build --config vite.config.js --base '/gh-pr-stats/'",
     "lint": "biome check --fix --unsafe src"
   },
   "dependencies": {
