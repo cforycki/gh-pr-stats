@@ -7,6 +7,7 @@ import {
   dataState,
   endDateState,
   organizationState,
+  rawDataState,
   repositoriesState,
   startDateState,
 } from "../state.js";
@@ -21,6 +22,7 @@ export const RunAnalyze = () => {
   const [loading, setLoading] = useState(false);
   const disabled = !apiKey || !organization;
   const [, setData] = useAtom(dataState);
+  const [, setRawData] = useAtom(rawDataState);
 
   const repositories = repositoriesRaw.split(/[,; ]/);
 
@@ -34,6 +36,7 @@ export const RunAnalyze = () => {
         endDate,
         repositories,
       });
+      setRawData(result);
       const analyzed = await analyze({
         data: result,
         repositories,

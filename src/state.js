@@ -16,3 +16,4 @@ export const sortState = atomWithStorage("sort", "");
 export const summedState = atomWithStorage("summed", false);
 
 export const dataState = atomWithStorage("data", {});
+export const rawDataState = atomWithStorage("rawData", {});
