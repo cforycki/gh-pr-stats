@@ -62,8 +62,9 @@ export const analyze = async ({ data, repositories, users = [] }) => {
         }
 
         if (review.state === "COMMENTED" || review.body?.length || review.comments?.nodes?.length) {
-          dataByUsers[reviewAuthor].total.comments++;
-          dataByUsers[reviewAuthor].repositories[repository].comments++;
+          const n = (review.body?.length ? 1 : 0) + (review.comments?.nodes?.length ?? 0);
+          dataByUsers[reviewAuthor].total.comments += n;
+          dataByUsers[reviewAuthor].repositories[repository].comments += n;
         }
 
         if (

@@ -14,10 +14,11 @@ const buildRepoRequest = (organization, repository, cursor) => `
           nodes {
             createdAt
             permalink
+            title
             author {
               login
             }
-            comments(first: 30) {
+            comments(first: 50) {
               nodes {
                 author {
                   login
@@ -25,7 +26,7 @@ const buildRepoRequest = (organization, repository, cursor) => `
                 body
               }
             }
-            reviews(first: 100) {
+            reviews(first: 20) {
               nodes {
                 state
                 author {

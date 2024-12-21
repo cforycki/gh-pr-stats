@@ -1,9 +1,11 @@
-import { Card, Collapsible, Heading, Spacer, Stack, Tabs } from "@chakra-ui/react";
+import { Stack, Tabs } from "@chakra-ui/react";
 import { useAtomValue } from "jotai";
-import { useCallback, useMemo, useState } from "react";
-import { LuChevronDown, LuChevronUp, LuGithub, LuSigma, LuUser } from "react-icons/lu";
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { dataState, sortState, summedState } from "../state.js";
+import { useCallback, useMemo } from "react";
+import { LuGithub, LuSigma, LuUser } from "react-icons/lu";
+import { dataState, rawDataState, sortState } from "../state.js";
+import { CardCollapsible } from "./CardCollapsible.jsx";
+import { ChartBase } from "./ChartBase.jsx";
+import { UserContributions } from "./UserContributions.jsx";
 
 /**
  * @typedef {name: string, comments:number, approved: number, requestedChanges:number, comments: number } ChartValue
@@ -30,38 +32,6 @@ const useData = (factory) => {
     }
     return arr;
   }, [rawData, sort, factory]);
-};
-
-const ChartBase = ({ chartData }) => {
-  const summed = useAtomValue(summedState);
-  return (
-    <ResponsiveContainer width="100%" height={600}>
-      <BarChart
-        width={500}
-        height={600}
-        data={chartData}
-        margin={{
-          top: 5,
-          right: 30,
-          left: 20,
-          bottom: 5,
-        }}
-      >
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey={"name"} />
-        <YAxis />
-        <Tooltip labelStyle={{ color: "#666" }} cursor={{ fill: "var(--chakra-colors-gray-muted)", opacity: 0.65 }} />
-        <Legend />
-
-        {summed && <Bar dataKey="contributions" name="Contributions" fill={"#7eb0d5"} />}
-
-        {!summed && <Bar dataKey="created" name="Created" fill={"#7eb0d5"} />}
-        {!summed && <Bar dataKey="approved" name="Approved" fill={"#b2e061"} />}
-        {!summed && <Bar dataKey="requestedChanges" name="Requested changes" fill={"#bd7ebe"} />}
-        {!summed && <Bar dataKey="comments" name="Comments" fill={"#8bd3c7"} />}
-      </BarChart>
-    </ResponsiveContainer>
-  );
 };
 
 const ChartGlobal = () => {
@@ -121,32 +91,54 @@ const ChartRepository = ({ repository }) => {
   return <ChartBase chartData={data} />;
 };
 
-const CardCollapsible = ({ title, content }) => {
-  const [open, setOpen] = useState(false);
-  return (
-    <Collapsible.Root open={open} onOpenChange={({ open }) => setOpen(open)}>
-      <Card.Root>
-        <Collapsible.Trigger>
-          <Card.Header pb={6} flexDirection="row" alignItems="center">
-            <Heading size="md">{title}</Heading>
-            <Spacer />
-            {open ? <LuChevronUp /> : <LuChevronDown />}
-          </Card.Header>
-        </Collapsible.Trigger>
-        <Collapsible.Content>
-          <Card.Body pt={0}>{content}</Card.Body>
-        </Collapsible.Content>
-      </Card.Root>
-    </Collapsible.Root>
-  );
-};
-
 export const Data = () => {
   const data = useAtomValue(dataState);
   const users = Object.keys(data).filter((k) => k !== "linear" && k !== "dependabot");
   const repositories = [
     ...new Set(Object.keys(data).reduce((acc, user) => Object.keys(data[user].repositories), [])).keys(),
   ];
+
+  const rawData = useAtomValue(rawDataState);
+  const rawContributions = useMemo(
+    () =>
+      (Object.entries(rawData) ?? [])?.flatMap(([repository, rawData]) => {
+        return rawData.map((item) => {
+          const author = item.author.login;
+          const slug = item.permalink.split("/").pop();
+          const link = item.permalink;
+          const title = item.title;
+
+          return {
+            author,
+            link,
+            slug,
+            repository,
+            title,
+            comments: [
+              ...item.comments.nodes.map(({ author: { login }, body }) => ({ author: login, body })),
+              ...item.reviews.nodes
+                .filter((node) => ["COMMENTED", "APPROVED"].includes(node.state))
+                .flatMap(({ author: { login }, body, comments }) => [
+                  ...(body ? [{ author: login, body }] : []),
+                  ...comments.nodes.map((comment) => ({ author: login, body: comment.body })),
+                ]),
+            ].filter((k) => k.author !== "linear" && k.author !== "dependabot"),
+            approvals: item.reviews.nodes
+              .filter((node) => node.state === "APPROVED")
+              .map(({ author: { login }, body }) => ({ author: login, body })),
+            requestedChanges: item.reviews.nodes
+              .filter((node) => ["CHANGES_REQUESTED", "DISMISSED"].includes(node.state))
+              .flatMap(({ author: { login }, body, comments }) => [
+                ...(body ? [{ author: login, body }] : []),
+                ...comments.nodes.map((comment) => ({ author: login, body: comment.body })),
+              ]),
+          };
+        });
+      }),
+    [rawData],
+  );
+
+  console.log(rawContributions);
 
   return (
     <Tabs.Root defaultValue="global" size={"lg"} fitted={true}>
@@ -170,7 +162,16 @@ export const Data = () => {
       <Tabs.Content p={4} value="users">
         <Stack gap={4}>
           {users.map((user) => (
-            <CardCollapsible title={user} content={<ChartUser user={user} />} key={user} />
+            <CardCollapsible
+              title={user}
+              content={
+                <>
+                  <ChartUser user={user} />
+                  <UserContributions user={user} rawContributions={rawContributions} />
+                </>
+              }
+              key={user}
+            />
           ))}
         </Stack>
       </Tabs.Content>
