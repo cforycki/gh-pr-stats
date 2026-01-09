@@ -14,6 +14,7 @@ export const repositoriesState = atomWithStorage("repositories", "");
 export const configOpenState = atomWithStorage("configOpen", true);
 export const sortState = atomWithStorage("sort", "");
 export const summedState = atomWithStorage("summed", false);
+export const ignoreUsersState = atomWithStorage("ignoreUsers", "");
 
 export const dataState = atomWithStorage("data", {});
 export const rawDataState = atomWithStorage("rawData", {});

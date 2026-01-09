@@ -5,6 +5,7 @@ import { RunAnalyze } from "./RunAnalyze.jsx";
 import { Sorting } from "./Sorting.jsx";
 import { Summed } from "./Summed.jsx";
 import { ColorModeButton } from "./ui/color-mode.jsx";
+import {IgnoreUsers} from "./IgnoreUsers.jsx";
 
 const AppBar = () => (
   <Container fluid={"true"} p={0}>
@@ -23,6 +24,7 @@ const Filters = () => {
     <Flex flexDirection="column" gap={4}>
       <Sorting />
       <Summed />
+      <IgnoreUsers />
     </Flex>
   );
 };

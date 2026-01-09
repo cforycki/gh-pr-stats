@@ -2,7 +2,7 @@ import { Stack, Tabs } from "@chakra-ui/react";
 import { useAtomValue } from "jotai";
 import { useCallback, useMemo } from "react";
 import { LuGithub, LuSigma, LuUser } from "react-icons/lu";
-import { dataState, rawDataState, sortState } from "../state.js";
+import {dataState, ignoreUsersState, rawDataState, sortState} from "../state.js";
 import { CardCollapsible } from "./CardCollapsible.jsx";
 import { ChartBase } from "./ChartBase.jsx";
 import { UserContributions } from "./UserContributions.jsx";
@@ -19,8 +19,9 @@ import { UserContributions } from "./UserContributions.jsx";
 const useData = (factory) => {
   const rawData = useAtomValue(dataState);
   const sort = useAtomValue(sortState);
+  const ignoreUsers = useAtomValue(ignoreUsersState);
   return useMemo(() => {
-    let arr = factory(rawData).map(({ name, ...contributions }) => ({
+    let arr = factory(rawData).filter(({name}) => !ignoreUsers.split(/[,; ]/).includes(name)).map(({ name, ...contributions }) => ({
       name,
       ...contributions,
       contributions: Object.values(contributions).reduce((a, b) => a + b),
@@ -31,7 +32,7 @@ const useData = (factory) => {
       });
     }
     return arr;
-  }, [rawData, sort, factory]);
+  }, [rawData, sort, factory, ignoreUsers]);
 };
 
 const ChartGlobal = () => {
@@ -39,7 +40,6 @@ const ChartGlobal = () => {
     useCallback(
       (rawData) =>
         Object.keys(rawData)
-          .filter((k) => k !== "linear" && k !== "dependabot")
           .reduce((acc, key) => {
             acc.push({
               name: key,
@@ -76,7 +76,6 @@ const ChartRepository = ({ repository }) => {
     useCallback(
       (rawData) =>
         Object.keys(rawData)
-          .filter((k) => k !== "linear" && k !== "dependabot")
           .reduce((acc, key) => {
             acc.push({
               name: key,
@@ -93,7 +92,8 @@ const ChartRepository = ({ repository }) => {
 
 export const Data = () => {
   const data = useAtomValue(dataState);
-  const users = Object.keys(data).filter((k) => k !== "linear" && k !== "dependabot");
+  const ignoreUsers = useAtomValue(ignoreUsersState);
+  const users = Object.keys(data).filter((k) => !ignoreUsers.split(/[,; ]/).includes(k));
   const repositories = [
     ...new Set(Object.keys(data).reduce((acc, user) => Object.keys(data[user].repositories), [])).keys(),
   ];
@@ -122,7 +122,7 @@ export const Data = () => {
                   ...(body ? [{ author: login, body }] : []),
                   ...comments.nodes.map((comment) => ({ author: login, body: comment.body })),
                 ]),
-            ].filter((k) => k.author !== "linear" && k.author !== "dependabot"),
+            ].filter((k) => !ignoreUsers.split(/[,; ]/).includes(k.author)),
             approvals: item.reviews.nodes
               .filter((node) => node.state === "APPROVED")
               .map(({ author: { login }, body }) => ({ author: login, body })),
@@ -137,8 +137,6 @@ export const Data = () => {
       }),
     [rawData],
   );
-
-  console.log(rawContributions);
 
   return (
     <Tabs.Root defaultValue="global" size={"lg"} fitted={true}>
