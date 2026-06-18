@@ -1,16 +1,15 @@
 import { createListCollection } from "@chakra-ui/react";
 import { useAtom } from "jotai";
+import { METRICS } from "../core/metrics.js";
 import { sortState } from "../state.js";
 import { Field } from "./ui/field.jsx";
 import { SelectContent, SelectItem, SelectLabel, SelectRoot, SelectTrigger, SelectValueText } from "./ui/select.jsx";
 
 const options = createListCollection({
   items: [
-    { label: "Total contributions", value: "contributions" },
-    { label: "Created", value: "created" },
-    { label: "Approved", value: "approved" },
-    { label: "Requested changes", value: "requestedChanges" },
-    { label: "Comments", value: "comments" },
+    { label: "Total of shown metrics", value: "contributions" },
+    { label: "Total contributions", value: "totalContributions" },
+    ...METRICS.map(({ key, label }) => ({ label, value: key })),
   ],
 });
 

@@ -2,7 +2,8 @@ import { Stack, Tabs } from "@chakra-ui/react";
 import { useAtomValue } from "jotai";
 import { useCallback, useMemo } from "react";
 import { LuGithub, LuSigma, LuUser } from "react-icons/lu";
-import {dataState, ignoreUsersState, rawDataState, sortState} from "../state.js";
+import { METRIC_KEYS } from "../core/metrics.js";
+import { dataState, ignoreUsersState, metricsState, rawDataState, sortState } from "../state.js";
 import { CardCollapsible } from "./CardCollapsible.jsx";
 import { ChartBase } from "./ChartBase.jsx";
 import { UserContributions } from "./UserContributions.jsx";
@@ -20,33 +21,40 @@ const useData = (factory) => {
   const rawData = useAtomValue(dataState);
   const sort = useAtomValue(sortState);
   const ignoreUsers = useAtomValue(ignoreUsersState);
+  const metrics = useAtomValue(metricsState);
   return useMemo(() => {
-    let arr = factory(rawData).filter(({name}) => !ignoreUsers.split(/[,; ]/).includes(name)).map(({ name, ...contributions }) => ({
-      name,
-      ...contributions,
-      contributions: Object.values(contributions).reduce((a, b) => a + b),
-    }));
+    let arr = factory(rawData)
+      .filter(({ name }) => !ignoreUsers.split(/[,; ]/).includes(name))
+      .map(({ name, ...contributions }) => ({
+        name,
+        ...contributions,
+        // Only sum the metrics the user opted into, so noisy ones (e.g. comments)
+        // can be excluded from the total.
+        contributions: metrics.reduce((total, key) => total + (contributions[key] ?? 0), 0),
+        // Sum of every metric, independent of the picker, for the "Total
+        // contributions" sort.
+        totalContributions: METRIC_KEYS.reduce((total, key) => total + (contributions[key] ?? 0), 0),
+      }));
     if (sort) {
       arr = arr.sort((a, b) => {
         return b[sort] - a[sort];
       });
     }
     return arr;
-  }, [rawData, sort, factory, ignoreUsers]);
+  }, [rawData, sort, factory, ignoreUsers, metrics]);
 };
 
 const ChartGlobal = () => {
   const data = useData(
     useCallback(
       (rawData) =>
-        Object.keys(rawData)
-          .reduce((acc, key) => {
-            acc.push({
-              name: key,
-              ...rawData[key].total,
-            });
-            return acc;
-          }, []),
+        Object.keys(rawData).reduce((acc, key) => {
+          acc.push({
+            name: key,
+            ...rawData[key].total,
+          });
+          return acc;
+        }, []),
       [],
     ),
   );
@@ -75,14 +83,13 @@ const ChartRepository = ({ repository }) => {
   const data = useData(
     useCallback(
       (rawData) =>
-        Object.keys(rawData)
-          .reduce((acc, key) => {
-            acc.push({
-              name: key,
-              ...rawData[key].repositories[repository],
-            });
-            return acc;
-          }, []),
+        Object.keys(rawData).reduce((acc, key) => {
+          acc.push({
+            name: key,
+            ...rawData[key].repositories[repository],
+          });
+          return acc;
+        }, []),
       [repository],
     ),
   );

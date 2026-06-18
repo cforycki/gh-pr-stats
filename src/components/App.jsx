@@ -1,11 +1,13 @@
 import { Box, Container, Flex, Grid, GridItem, HStack, Heading, Spacer, VStack } from "@chakra-ui/react";
+import { usePersistData } from "../usePersistData.js";
 import { Config } from "./Config.jsx";
 import { Data } from "./Data.jsx";
+import { IgnoreUsers } from "./IgnoreUsers.jsx";
+import { Metrics } from "./Metrics.jsx";
 import { RunAnalyze } from "./RunAnalyze.jsx";
 import { Sorting } from "./Sorting.jsx";
 import { Summed } from "./Summed.jsx";
 import { ColorModeButton } from "./ui/color-mode.jsx";
-import {IgnoreUsers} from "./IgnoreUsers.jsx";
 
 const AppBar = () => (
   <Container fluid={"true"} p={0}>
@@ -24,6 +26,7 @@ const Filters = () => {
     <Flex flexDirection="column" gap={4}>
       <Sorting />
       <Summed />
+      <Metrics />
       <IgnoreUsers />
     </Flex>
   );
@@ -44,9 +47,12 @@ const MainContent = () => (
   </Container>
 );
 
-export const App = () => (
-  <VStack h={"100vh"} gap={0}>
-    <AppBar />
-    <MainContent />
-  </VStack>
-);
+export const App = () => {
+  usePersistData();
+  return (
+    <VStack h={"100vh"} gap={0}>
+      <AppBar />
+      <MainContent />
+    </VStack>
+  );
+};
