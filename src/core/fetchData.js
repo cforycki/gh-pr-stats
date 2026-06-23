@@ -54,14 +54,16 @@ const buildRepoRequest = (organization, repository, cursor) => `
                 }
               }
             }
-            reviewRequests(first: 20) {
+            timelineItems(first: 50, itemTypes: [REVIEW_REQUESTED_EVENT]) {
               nodes {
-                requestedReviewer {
-                  ... on User {
-                    login
-                  }
-                  ... on Team {
-                    slug
+                ... on ReviewRequestedEvent {
+                  requestedReviewer {
+                    ... on User {
+                      login
+                    }
+                    ... on Team {
+                      slug
+                    }
                   }
                 }
               }
@@ -113,9 +115,9 @@ export const fetchData = async ({ apiKey, organization, repositories, startDate,
   const teamSlugs = new Set();
   for (const nodes of Object.values(result)) {
     for (const pr of nodes) {
-      for (const rr of pr.reviewRequests.nodes) {
-        if (rr.requestedReviewer?.slug) {
-          teamSlugs.add(rr.requestedReviewer.slug);
+      for (const event of pr.timelineItems.nodes) {
+        if (event.requestedReviewer?.slug) {
+          teamSlugs.add(event.requestedReviewer.slug);
         }
       }
     }

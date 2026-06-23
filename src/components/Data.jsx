@@ -116,22 +116,22 @@ export const Data = () => {
           const link = item.permalink;
           const title = item.title;
 
-          const reviewedLogins = item.reviews.nodes
-            .filter((r) => r.author.login !== author)
-            .map((r) => r.author.login);
-          const directRequestedLogins = item.reviewRequests.nodes
-            .map((rr) => rr.requestedReviewer?.login)
-            .filter(Boolean);
-          const reviewRequested = [...new Set([...reviewedLogins, ...directRequestedLogins])];
+          const reviewRequested = [
+            ...new Set(
+              (item.timelineItems?.nodes ?? [])
+                .map((e) => e.requestedReviewer?.login)
+                .filter((login) => login && login !== author)
+            ),
+          ];
 
           const reviewRequestedViaTeam = [
             ...new Set(
-              item.reviewRequests.nodes.flatMap((rr) => {
-                const slug = rr.requestedReviewer?.slug;
+              (item.timelineItems?.nodes ?? []).flatMap((e) => {
+                const slug = e.requestedReviewer?.slug;
                 return slug && teamMembers[slug] ? teamMembers[slug] : [];
-              }),
+              })
             ),
-          ].filter((login) => login !== author);
+          ].filter((login) => login !== author && !reviewRequested.includes(login));
 
           return {
             author,

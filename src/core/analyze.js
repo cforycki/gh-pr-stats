@@ -18,7 +18,7 @@ export const analyze = async ({ data, repositories, users = [], teamMembers = {}
       const {
         comments: { nodes: comments },
         reviews: { nodes: reviews },
-        reviewRequests: { nodes: reviewRequests },
+        timelineItems: { nodes: reviewRequestEvents },
         author: { login: prAuthor },
       } = pullRequest;
 
@@ -77,21 +77,18 @@ export const analyze = async ({ data, repositories, users = [], teamMembers = {}
           dataByUsers[reviewAuthor].repositories[repository].requestedChanges++;
         }
       }
-      // Individual requests: direct User requests + users who already reviewed (request is "consumed")
-      // Exclude the PR author — they may review their own PR (e.g. replying to comments) without being requested.
-      const reviewedLogins = new Set(reviews.filter((r) => r.author.login !== prAuthor).map((r) => r.author.login));
-      const directRequestedLogins = new Set(
-        reviewRequests.map((rr) => rr.requestedReviewer?.login).filter(Boolean)
+      const individualLogins = new Set(
+        reviewRequestEvents
+          .map((e) => e.requestedReviewer?.login)
+          .filter((login) => login && login !== prAuthor)
       );
-      const individualLogins = new Set([...reviewedLogins, ...directRequestedLogins]);
 
-      // Team members of requested teams
       const teamRequestedLogins = new Set();
-      for (const rr of reviewRequests) {
-        const slug = rr.requestedReviewer?.slug;
+      for (const event of reviewRequestEvents) {
+        const slug = event.requestedReviewer?.slug;
         if (slug && teamMembers[slug]) {
           for (const login of teamMembers[slug]) {
-            if (login !== prAuthor) {
+            if (login !== prAuthor && !individualLogins.has(login)) {
               teamRequestedLogins.add(login);
             }
           }
