@@ -1,5 +1,19 @@
 import { GraphQLClient } from "graphql-request";
 
+const buildTeamMembersRequest = (organization, teamSlug) => `
+  query {
+    organization(login: "${organization}") {
+      team(slug: "${teamSlug}") {
+        members(first: 100) {
+          nodes {
+            login
+          }
+        }
+      }
+    }
+  }
+`;
+
 const buildRepoRequest = (organization, repository, cursor) => `
   query {
     organization(login: "${organization}") {
@@ -36,6 +50,18 @@ const buildRepoRequest = (organization, repository, cursor) => `
                 comments(first: 20){
                   nodes {
                     body
+                  }
+                }
+              }
+            }
+            reviewRequests(first: 20) {
+              nodes {
+                requestedReviewer {
+                  ... on User {
+                    login
+                  }
+                  ... on Team {
+                    slug
                   }
                 }
               }
@@ -83,5 +109,23 @@ export const fetchData = async ({ apiKey, organization, repositories, startDate,
 
     result[repository] = nodes;
   }
-  return result;
+
+  const teamSlugs = new Set();
+  for (const nodes of Object.values(result)) {
+    for (const pr of nodes) {
+      for (const rr of pr.reviewRequests.nodes) {
+        if (rr.requestedReviewer?.slug) {
+          teamSlugs.add(rr.requestedReviewer.slug);
+        }
+      }
+    }
+  }
+
+  const teamMembers = {};
+  for (const slug of teamSlugs) {
+    const response = await graphQLClient.request(buildTeamMembersRequest(organization, slug));
+    teamMembers[slug] = response.organization.team.members.nodes.map((n) => n.login);
+  }
+
+  return { data: result, teamMembers };
 };

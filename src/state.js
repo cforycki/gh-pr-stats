@@ -23,3 +23,5 @@ export const metricsState = atomWithStorage("metrics", METRIC_KEYS);
 // too large for localStorage. Kept in-memory here and hydrated on mount.
 export const dataState = atom({});
 export const rawDataState = atom({});
+// Not persisted — populated on each fresh fetch alongside rawDataState.
+export const teamMembersState = atom({});

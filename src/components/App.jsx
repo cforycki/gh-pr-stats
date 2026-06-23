@@ -35,7 +35,7 @@ const Filters = () => {
 const MainContent = () => (
   <Container fluid={"true"} p={0} flexGrow={1} display="flex" overflow="hidden">
     <Grid container templateColumns="400px 1fr" templateRows="1fr" flexGrow={1}>
-      <GridItem borderRightWidth={1} borderRightColor="muted" p={4} gap={8} display="flex" flexDirection="column">
+      <GridItem borderRightWidth={1} borderRightColor="muted" p={4} gap={8} display="flex" flexDirection="column" overflow="auto">
         <Config />
         <RunAnalyze />
         <Filters />

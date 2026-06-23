@@ -1,15 +1,15 @@
 const initRepositoriesData = (repositories = []) =>
   repositories.reduce((acc, r) => {
-    acc[r] = { created: 0, approved: 0, requestedChanges: 0, comments: 0 };
+    acc[r] = { created: 0, approved: 0, requestedChanges: 0, comments: 0, reviewRequested: 0, reviewRequestedTotal: 0 };
     return acc;
   }, {});
 
 const initUserData = (repositories) => ({
   repositories: initRepositoriesData(repositories),
-  total: { created: 0, approved: 0, requestedChanges: 0, comments: 0 },
+  total: { created: 0, approved: 0, requestedChanges: 0, comments: 0, reviewRequested: 0, reviewRequestedTotal: 0 },
 });
 
-export const analyze = async ({ data, repositories, users = [] }) => {
+export const analyze = async ({ data, repositories, users = [], teamMembers = {} }) => {
   const dataByUsers = {};
   for (const repository of repositories) {
     const rawData = data[repository];
@@ -18,6 +18,7 @@ export const analyze = async ({ data, repositories, users = [] }) => {
       const {
         comments: { nodes: comments },
         reviews: { nodes: reviews },
+        reviewRequests: { nodes: reviewRequests },
         author: { login: prAuthor },
       } = pullRequest;
 
@@ -75,6 +76,50 @@ export const analyze = async ({ data, repositories, users = [] }) => {
           dataByUsers[reviewAuthor].total.requestedChanges++;
           dataByUsers[reviewAuthor].repositories[repository].requestedChanges++;
         }
+      }
+      // Individual requests: direct User requests + users who already reviewed (request is "consumed")
+      // Exclude the PR author — they may review their own PR (e.g. replying to comments) without being requested.
+      const reviewedLogins = new Set(reviews.filter((r) => r.author.login !== prAuthor).map((r) => r.author.login));
+      const directRequestedLogins = new Set(
+        reviewRequests.map((rr) => rr.requestedReviewer?.login).filter(Boolean)
+      );
+      const individualLogins = new Set([...reviewedLogins, ...directRequestedLogins]);
+
+      // Team members of requested teams
+      const teamRequestedLogins = new Set();
+      for (const rr of reviewRequests) {
+        const slug = rr.requestedReviewer?.slug;
+        if (slug && teamMembers[slug]) {
+          for (const login of teamMembers[slug]) {
+            if (login !== prAuthor) {
+              teamRequestedLogins.add(login);
+            }
+          }
+        }
+      }
+
+      const totalRequestedLogins = new Set([...individualLogins, ...teamRequestedLogins]);
+
+      for (const login of individualLogins) {
+        if (users.length > 0 && !users.includes(login)) {
+          continue;
+        }
+        if (!dataByUsers[login]) {
+          dataByUsers[login] = initUserData(repositories);
+        }
+        dataByUsers[login].total.reviewRequested++;
+        dataByUsers[login].repositories[repository].reviewRequested++;
+      }
+
+      for (const login of totalRequestedLogins) {
+        if (users.length > 0 && !users.includes(login)) {
+          continue;
+        }
+        if (!dataByUsers[login]) {
+          dataByUsers[login] = initUserData(repositories);
+        }
+        dataByUsers[login].total.reviewRequestedTotal++;
+        dataByUsers[login].repositories[repository].reviewRequestedTotal++;
       }
     }
   }

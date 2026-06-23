@@ -10,6 +10,7 @@ import {
   rawDataState,
   repositoriesState,
   startDateState,
+  teamMembersState,
 } from "../state.js";
 import { Button } from "./ui/button.jsx";
 
@@ -23,13 +24,14 @@ export const RunAnalyze = () => {
   const disabled = !apiKey || !organization;
   const [, setData] = useAtom(dataState);
   const [, setRawData] = useAtom(rawDataState);
+  const [, setTeamMembers] = useAtom(teamMembersState);
 
   const repositories = repositoriesRaw.split(/[,; ]/);
 
   const handleClick = async () => {
     setLoading(true);
     try {
-      const result = await fetchData({
+      const { data: result, teamMembers } = await fetchData({
         apiKey,
         organization,
         startDate,
@@ -37,8 +39,10 @@ export const RunAnalyze = () => {
         repositories,
       });
       setRawData(result);
+      setTeamMembers(teamMembers);
       const analyzed = await analyze({
         data: result,
+        teamMembers,
         repositories,
       });
       setData(analyzed);

@@ -3,7 +3,7 @@ import { useAtomValue } from "jotai";
 import { useCallback, useMemo } from "react";
 import { LuGithub, LuSigma, LuUser } from "react-icons/lu";
 import { METRIC_KEYS } from "../core/metrics.js";
-import { dataState, ignoreUsersState, metricsState, rawDataState, sortState } from "../state.js";
+import { dataState, ignoreUsersState, metricsState, rawDataState, sortState, teamMembersState } from "../state.js";
 import { CardCollapsible } from "./CardCollapsible.jsx";
 import { ChartBase } from "./ChartBase.jsx";
 import { UserContributions } from "./UserContributions.jsx";
@@ -106,6 +106,7 @@ export const Data = () => {
   ];
 
   const rawData = useAtomValue(rawDataState);
+  const teamMembers = useAtomValue(teamMembersState);
   const rawContributions = useMemo(
     () =>
       (Object.entries(rawData) ?? [])?.flatMap(([repository, rawData]) => {
@@ -114,6 +115,23 @@ export const Data = () => {
           const slug = item.permalink.split("/").pop();
           const link = item.permalink;
           const title = item.title;
+
+          const reviewedLogins = item.reviews.nodes
+            .filter((r) => r.author.login !== author)
+            .map((r) => r.author.login);
+          const directRequestedLogins = item.reviewRequests.nodes
+            .map((rr) => rr.requestedReviewer?.login)
+            .filter(Boolean);
+          const reviewRequested = [...new Set([...reviewedLogins, ...directRequestedLogins])];
+
+          const reviewRequestedViaTeam = [
+            ...new Set(
+              item.reviewRequests.nodes.flatMap((rr) => {
+                const slug = rr.requestedReviewer?.slug;
+                return slug && teamMembers[slug] ? teamMembers[slug] : [];
+              }),
+            ),
+          ].filter((login) => login !== author);
 
           return {
             author,
@@ -139,10 +157,12 @@ export const Data = () => {
                 ...(body ? [{ author: login, body }] : []),
                 ...comments.nodes.map((comment) => ({ author: login, body: comment.body })),
               ]),
+            reviewRequested,
+            reviewRequestedViaTeam,
           };
         });
       }),
-    [rawData],
+    [rawData, teamMembers],
   );
 
   return (

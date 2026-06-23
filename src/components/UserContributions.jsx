@@ -118,6 +118,34 @@ const RequestedChangesTable = ({ user, rawContributions }) => {
   return <Table table={table} />;
 };
 
+const ReviewRequestedTable = ({ user, rawContributions }) => {
+  const columns = [...baseColumns];
+  const contributions = useMemo(() => {
+    return rawContributions.filter((item) => item.reviewRequested.includes(user));
+  }, [rawContributions, user]);
+
+  const table = useReactTable({
+    data: contributions,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+  return <Table table={table} />;
+};
+
+const ReviewRequestedViaTeamTable = ({ user, rawContributions }) => {
+  const columns = [...baseColumns];
+  const contributions = useMemo(() => {
+    return rawContributions.filter((item) => item.reviewRequestedViaTeam.includes(user));
+  }, [rawContributions, user]);
+
+  const table = useReactTable({
+    data: contributions,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+  return <Table table={table} />;
+};
+
 export const UserContributions = ({ user, rawContributions }) => {
   return (
     <Flex flexDirection="column" pt={6} gap={2} divideY={"2px"}>
@@ -133,6 +161,14 @@ export const UserContributions = ({ user, rawContributions }) => {
       <SectionCollapsible
         title="Requested changes"
         content={<RequestedChangesTable user={user} rawContributions={rawContributions} />}
+      />
+      <SectionCollapsible
+        title="Review requested"
+        content={<ReviewRequestedTable user={user} rawContributions={rawContributions} />}
+      />
+      <SectionCollapsible
+        title="Review requested via team"
+        content={<ReviewRequestedViaTeamTable user={user} rawContributions={rawContributions} />}
       />
     </Flex>
   );
